@@ -6,11 +6,14 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
-
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.post("/api/contact", (req, res) => {
+    const { email, naam, bericht } = req.body;
+    if (!email || !naam || !bericht) {
+      return res.status(400).json({ error: "Alle velden zijn verplicht" });
+    }
+    console.log("Contact form submission:", { email, naam, bericht });
+    res.json({ success: true, message: "Bericht ontvangen" });
+  });
 
   return httpServer;
 }
