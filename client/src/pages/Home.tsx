@@ -590,6 +590,7 @@ function Footer() {
                 </a>
               )
             )}
+            <Link href="/admin/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors" data-testid="link-hq">Heerikhuize HQ</Link>
           </div>
         </div>
       </div>
