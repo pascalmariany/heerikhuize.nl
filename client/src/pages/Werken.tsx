@@ -53,12 +53,11 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">Van Heerikhuize Architectuur - Architecten & Bouwadviseurs</p>
-          <div className="flex items-center gap-6 flex-wrap">
-            {NAV_ITEMS.map((item) => (
-              <Link key={item.label} href={item.href} className="text-xs text-gray-400 hover:text-white transition-colors uppercase tracking-wider" data-testid={`link-footer-${item.label.toLowerCase()}`}>{item.label}</Link>
-            ))}
-            <Link href="/admin/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors" data-testid="link-hq">Heerikhuize HQ</Link>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-privacy">Privacyverklaring</Link>
+            <Link href="/algemene-voorwaarden" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-av">Algemene Voorwaarden</Link>
           </div>
+          <p className="text-sm text-gray-500">© 2025 Alle rechten voorbehouden</p>
         </div>
       </div>
     </footer>
