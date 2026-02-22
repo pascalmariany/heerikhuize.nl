@@ -15,6 +15,7 @@ import AdminNewsPage from "@/pages/AdminNews";
 import ProjectDetailPage from "@/pages/ProjectDetail";
 import NieuwsPage from "@/pages/Nieuws";
 import NieuwsDetailPage from "@/pages/NieuwsDetail";
+import PrivacyPage from "@/pages/Privacy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/admin/nieuws" component={AdminNewsPage} />
+      <Route path="/privacy" component={PrivacyPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -61,7 +63,7 @@ function CookieBanner() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <p className="text-sm text-[#555] flex-1 leading-relaxed">
           Deze website maakt gebruik van cookies om uw ervaring te verbeteren. Door verder te gaan op deze website, gaat u akkoord met ons gebruik van cookies. Lees ons{" "}
-          <span className="text-[#96AB50] underline cursor-pointer">privacybeleid</span>{" "}
+          <a href="/privacy" className="text-[#96AB50] underline hover:text-[#829745]">privacybeleid</a>{" "}
           voor meer informatie.
         </p>
         <div className="flex gap-3 flex-shrink-0">
