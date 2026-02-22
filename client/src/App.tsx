@@ -16,6 +16,7 @@ import ProjectDetailPage from "@/pages/ProjectDetail";
 import NieuwsPage from "@/pages/Nieuws";
 import NieuwsDetailPage from "@/pages/NieuwsDetail";
 import PrivacyPage from "@/pages/Privacy";
+import AlgemeneVoorwaardenPage from "@/pages/AlgemeneVoorwaarden";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/admin/nieuws" component={AdminNewsPage} />
       <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/algemene-voorwaarden" component={AlgemeneVoorwaardenPage} />
       <Route component={NotFound} />
     </Switch>
   );
