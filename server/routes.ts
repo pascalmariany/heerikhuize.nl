@@ -8,7 +8,6 @@ import connectPg from "connect-pg-simple";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { insertProjectSchema } from "@shared/schema";
 
 declare module "express-session" {
   interface SessionData {
@@ -120,8 +119,21 @@ export async function registerRoutes(
     res.json(allProjects);
   });
 
+  app.get("/api/project/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Ongeldig project ID" });
+    }
+    const project = await storage.getProject(id);
+    if (!project) {
+      return res.status(404).json({ error: "Project niet gevonden" });
+    }
+    const images = await storage.getProjectImages(id);
+    res.json({ ...project, images });
+  });
+
   app.get("/api/projects/:category", async (req, res) => {
-    const { category } = req.params;
+    const category = req.params.category as string;
     const categoryProjects = await storage.getProjectsByCategory(category);
     res.json(categoryProjects);
   });
@@ -129,7 +141,7 @@ export async function registerRoutes(
   const validCategories = ["wonen", "werken", "interieur"];
 
   app.post("/api/admin/projects", requireAuth, upload.single("image"), async (req, res) => {
-    const { title, category, sortOrder } = req.body;
+    const { title, category, sortOrder, description } = req.body;
     if (!title || !category) {
       return res.status(400).json({ error: "Titel en categorie zijn verplicht" });
     }
@@ -143,14 +155,15 @@ export async function registerRoutes(
       title: title.trim(),
       category,
       image: `/uploads/${req.file.filename}`,
+      description: description || "",
       sortOrder: parseInt(sortOrder) || 0,
     });
     res.json(project);
   });
 
   app.put("/api/admin/projects/:id", requireAuth, upload.single("image"), async (req, res) => {
-    const id = parseInt(req.params.id);
-    const { title, category, sortOrder } = req.body;
+    const id = parseInt(req.params.id as string);
+    const { title, category, sortOrder, description } = req.body;
     const updateData: Record<string, any> = {};
     if (title) updateData.title = title.trim();
     if (category) {
@@ -160,6 +173,7 @@ export async function registerRoutes(
       updateData.category = category;
     }
     if (sortOrder !== undefined) updateData.sortOrder = parseInt(sortOrder);
+    if (description !== undefined) updateData.description = description;
     if (req.file) {
       updateData.image = `/uploads/${req.file.filename}`;
     }
@@ -171,7 +185,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/projects/:id", requireAuth, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(req.params.id as string);
     const success = await storage.deleteProject(id);
     if (!success) {
       return res.status(404).json({ error: "Project niet gevonden" });
@@ -179,11 +193,43 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.post("/api/admin/upload", requireAuth, upload.single("image"), async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "Geen afbeelding geüpload" });
+  app.get("/api/admin/projects/:id/images", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const images = await storage.getProjectImages(id);
+    res.json(images);
+  });
+
+  app.post("/api/admin/projects/:id/images", requireAuth, upload.array("images", 20), async (req, res) => {
+    const projectId = parseInt(req.params.id as string);
+    const project = await storage.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({ error: "Project niet gevonden" });
     }
-    res.json({ path: `/uploads/${req.file.filename}` });
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "Geen afbeeldingen geüpload" });
+    }
+    const existing = await storage.getProjectImages(projectId);
+    const startOrder = existing.length;
+    const created = [];
+    for (let i = 0; i < files.length; i++) {
+      const img = await storage.addProjectImage({
+        projectId,
+        image: `/uploads/${files[i].filename}`,
+        sortOrder: startOrder + i,
+      });
+      created.push(img);
+    }
+    res.json(created);
+  });
+
+  app.delete("/api/admin/project-images/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const success = await storage.deleteProjectImage(id);
+    if (!success) {
+      return res.status(404).json({ error: "Afbeelding niet gevonden" });
+    }
+    res.json({ success: true });
   });
 
   return httpServer;

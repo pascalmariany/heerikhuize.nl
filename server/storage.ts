@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Project, type InsertProject, users, projects } from "@shared/schema";
+import { type User, type InsertUser, type Project, type InsertProject, type ProjectImage, type InsertProjectImage, users, projects, projectImages } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
 
@@ -12,6 +12,9 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
+  getProjectImages(projectId: number): Promise<ProjectImage[]>;
+  addProjectImage(image: InsertProjectImage): Promise<ProjectImage>;
+  deleteProjectImage(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -54,7 +57,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: number): Promise<boolean> {
+    await db.delete(projectImages).where(eq(projectImages.projectId, id));
     const result = await db.delete(projects).where(eq(projects.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getProjectImages(projectId: number): Promise<ProjectImage[]> {
+    return db.select().from(projectImages).where(eq(projectImages.projectId, projectId)).orderBy(asc(projectImages.sortOrder));
+  }
+
+  async addProjectImage(image: InsertProjectImage): Promise<ProjectImage> {
+    const [created] = await db.insert(projectImages).values(image).returning();
+    return created;
+  }
+
+  async deleteProjectImage(id: number): Promise<boolean> {
+    const result = await db.delete(projectImages).where(eq(projectImages.id, id)).returning();
     return result.length > 0;
   }
 }
