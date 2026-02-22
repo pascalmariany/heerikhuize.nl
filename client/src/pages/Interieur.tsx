@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import logoPath from "@assets/logo.png";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const NAV_ITEMS = [
@@ -100,82 +100,78 @@ function Footer() {
   );
 }
 
-const CATEGORIES = [
+const PROJECTS = [
   {
-    title: "Wonen",
-    href: "/projecten/wonen",
-    image: "/images/wonen/project-1.jpg",
-  },
-  {
-    title: "Werken",
-    href: "/projecten/werken",
-    image: "/images/werken/project-1.jpg",
-  },
-  {
-    title: "Interieur",
-    href: "/projecten/interieur",
+    id: 1,
+    title: "Ontwerp wijzigingen exterieur & interieur jaren 30 woning Laren",
     image: "/images/interieur/project-1.jpg",
+  },
+  {
+    id: 2,
+    title: "Uitbreiding en interieur ontwerp woning Ede",
+    image: "/images/interieur/project-2.jpg",
+  },
+  {
+    id: 3,
+    title: "Interieur woning Ede",
+    image: "/images/interieur/project-3.jpg",
+  },
+  {
+    id: 4,
+    title: "Woning voor mensen met zeer beperkt zicht",
+    image: "/images/interieur/project-4.jpg",
   },
 ];
 
-export default function ProjectenPage() {
+export default function InterieurPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   return (
-    <div className="min-h-screen" data-testid="page-projecten">
+    <div className="min-h-screen" data-testid="page-interieur">
       <Header />
       <div className="pt-20">
-        <section className="py-16 bg-[#F7FAEE]" data-testid="section-projecten">
+        <section className="py-16 bg-[#F7FAEE]" data-testid="section-interieur">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl font-bold text-[#333] mb-4 font-heading" data-testid="text-projecten-title">
-              Projecten
-            </h1>
-            <p className="text-[#555] text-[15px] mb-12" data-testid="text-projecten-subtitle">
-              U vindt hier een overzicht van onze projecten.
-            </p>
+            <Link
+              href="/projecten"
+              className="inline-flex items-center gap-2 text-sm text-[#96AB50] hover:text-[#829745] transition-colors mb-8 font-medium"
+              data-testid="link-back-projecten"
+            >
+              <ArrowLeft size={16} />
+              Terug naar Projecten
+            </Link>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {CATEGORIES.map((cat) => (
-                <Link
-                  key={cat.title}
-                  href={cat.href}
-                  className="group relative block overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
-                  data-testid={`card-category-${cat.title.toLowerCase()}`}
+            <h1 className="text-4xl font-bold text-[#333] mb-12 font-heading" data-testid="text-interieur-title">
+              Interieur
+            </h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {PROJECTS.map((project) => (
+                <div
+                  key={project.id}
+                  className="group bg-white shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+                  data-testid={`card-project-${project.id}`}
                 >
-                  <div className="relative h-[350px]">
+                  <div className="overflow-hidden h-56">
                     <img
-                      src={cat.image}
-                      alt={cat.title}
+                      src={project.image}
+                      alt={project.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors duration-300" />
-                    <div className="absolute inset-0 flex items-end p-6">
-                      <h2 className="text-2xl font-bold text-white font-heading tracking-wide">
-                        {cat.title}
-                      </h2>
-                    </div>
                   </div>
-                </Link>
+                  <div className="p-5">
+                    <h3 className="font-bold text-[#333] text-[15px] leading-snug mb-3 font-heading" data-testid={`text-project-title-${project.id}`}>
+                      {project.title}
+                    </h3>
+                    <span className="text-[#96AB50] text-sm font-medium hover:text-[#829745] transition-colors cursor-pointer" data-testid={`link-lees-meer-${project.id}`}>
+                      Lees meer…
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="py-16 bg-white" data-testid="section-contact-cta">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl font-bold text-[#333] mb-4 font-heading">Neem contact op</h2>
-            <p className="text-[#555] mb-8 text-[15px]">
-              Heeft u (ver)bouwplannen? Neem gerust vrijblijvend contact op.
-            </p>
-            <Link
-              href="/#contact"
-              className="inline-block bg-[#96AB50] text-white px-8 py-3 text-sm font-semibold uppercase tracking-wider hover:bg-[#829745] transition-colors"
-              data-testid="button-contact-cta"
-            >
-              Contact
-            </Link>
           </div>
         </section>
       </div>
