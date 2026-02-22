@@ -48,3 +48,35 @@ export const insertProjectImageSchema = createInsertSchema(projectImages).omit({
 
 export type InsertProjectImage = z.infer<typeof insertProjectImageSchema>;
 export type ProjectImage = typeof projectImages.$inferSelect;
+
+export const newsCategories = pgTable("news_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertNewsCategorySchema = createInsertSchema(newsCategories).omit({
+  id: true,
+});
+
+export type InsertNewsCategory = z.infer<typeof insertNewsCategorySchema>;
+export type NewsCategory = typeof newsCategories.$inferSelect;
+
+export const newsArticles = pgTable("news_articles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  image: text("image").notNull(),
+  categoryId: integer("category_id"),
+  published: integer("published").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNewsArticleSchema = createInsertSchema(newsArticles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertNewsArticle = z.infer<typeof insertNewsArticleSchema>;
+export type NewsArticle = typeof newsArticles.$inferSelect;
