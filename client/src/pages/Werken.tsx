@@ -100,7 +100,7 @@ export default function WerkenPage() {
                     </div>
                     <div className="p-5">
                       <h3 className="font-bold text-[#333] text-[15px] leading-snug mb-3 font-heading" data-testid={`text-project-title-${project.id}`}>{project.title}</h3>
-                      <span className="text-[#96AB50] text-sm font-medium hover:text-[#829745] transition-colors cursor-pointer" data-testid={`link-lees-meer-${project.id}`}>Lees meer…</span>
+                      <Link href={`/project/${project.id}`} className="text-[#96AB50] text-sm font-medium hover:text-[#829745] transition-colors" data-testid={`link-lees-meer-${project.id}`}>Lees meer…</Link>
                     </div>
                   </div>
                 ))}

@@ -1,12 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
-import { LogOut, Plus, Pencil, Trash2, Upload, X } from "lucide-react";
+import { LogOut, Plus, Pencil, Trash2, Upload, X, Images, Eye } from "lucide-react";
+
+type ProjectImage = {
+  id: number;
+  projectId: number;
+  image: string;
+  sortOrder: number;
+};
 
 type Project = {
   id: number;
   title: string;
   category: string;
   image: string;
+  description: string | null;
   sortOrder: number;
 };
 
@@ -28,6 +36,7 @@ function ProjectModal({
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("wonen");
   const [sortOrder, setSortOrder] = useState(0);
+  const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [saving, setSaving] = useState(false);
@@ -39,12 +48,14 @@ function ProjectModal({
       setTitle(modal.project.title);
       setCategory(modal.project.category);
       setSortOrder(modal.project.sortOrder);
+      setDescription(modal.project.description || "");
       setPreview(modal.project.image);
       setImageFile(null);
     } else {
       setTitle("");
       setCategory("wonen");
       setSortOrder(0);
+      setDescription("");
       setPreview("");
       setImageFile(null);
     }
@@ -78,6 +89,7 @@ function ProjectModal({
       formData.append("title", title);
       formData.append("category", category);
       formData.append("sortOrder", String(sortOrder));
+      formData.append("description", description);
       if (imageFile) formData.append("image", imageFile);
 
       const url =
@@ -160,7 +172,21 @@ function ProjectModal({
 
           <div>
             <label className="block text-xs font-semibold text-[#333] uppercase tracking-wider mb-2">
-              Afbeelding
+              Beschrijving
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              className="w-full px-4 py-3 border border-gray-300 text-sm focus:outline-none focus:border-[#96AB50] resize-y"
+              placeholder="Beschrijf het project..."
+              data-testid="input-project-description"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#333] uppercase tracking-wider mb-2">
+              Hoofdafbeelding
             </label>
             <input
               ref={fileRef}
@@ -214,6 +240,127 @@ function ProjectModal({
   );
 }
 
+function ImageManager({
+  projectId,
+  onClose,
+}: {
+  projectId: number;
+  onClose: () => void;
+}) {
+  const [images, setImages] = useState<ProjectImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const fetchImages = async () => {
+    const res = await fetch(`/api/admin/projects/${projectId}/images`);
+    if (res.ok) {
+      setImages(await res.json());
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchImages();
+  }, [projectId]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append("images", files[i]);
+    }
+    const res = await fetch(`/api/admin/projects/${projectId}/images`, {
+      method: "POST",
+      body: formData,
+    });
+    if (res.ok) {
+      await fetchImages();
+    }
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleDelete = async (imageId: number) => {
+    if (!confirm("Weet je zeker dat je deze foto wilt verwijderen?")) return;
+    setDeleting(imageId);
+    const res = await fetch(`/api/admin/project-images/${imageId}`, { method: "DELETE" });
+    if (res.ok) {
+      setImages(images.filter((i) => i.id !== imageId));
+    }
+    setDeleting(null);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" data-testid="modal-images" onClick={onClose}>
+      <div className="bg-white w-full max-w-3xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-lg font-bold text-[#333] font-heading">
+            Foto's beheren
+          </h2>
+          <button onClick={onClose} className="text-[#777] hover:text-[#333] p-1" aria-label="Sluiten" data-testid="button-images-close">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          <div className="mb-6">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleUpload}
+              className="hidden"
+              data-testid="input-upload-images"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 bg-[#96AB50] text-white px-5 py-2.5 text-sm font-semibold uppercase tracking-wider hover:bg-[#829745] transition-colors disabled:opacity-60"
+              data-testid="button-add-images"
+            >
+              <Upload size={16} />
+              {uploading ? "Uploaden..." : "Foto's toevoegen"}
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8 text-[#777]">Laden...</div>
+          ) : images.length === 0 ? (
+            <div className="text-center py-8 text-[#777]" data-testid="text-no-images">
+              <p>Nog geen extra foto's toegevoegd.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {images.map((img) => (
+                <div key={img.id} className="relative group" data-testid={`admin-img-${img.id}`}>
+                  <img
+                    src={img.image}
+                    alt="Project foto"
+                    className="w-full h-36 object-cover shadow-sm"
+                  />
+                  <button
+                    onClick={() => handleDelete(img.id)}
+                    disabled={deleting === img.id}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 disabled:opacity-50"
+                    data-testid={`button-delete-img-${img.id}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [, setLocation] = useLocation();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -221,6 +368,7 @@ export default function AdminPage() {
   const [activeCategory, setActiveCategory] = useState("wonen");
   const [modal, setModal] = useState<ModalState>({ open: false, mode: "create" });
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [imageManagerId, setImageManagerId] = useState<number | null>(null);
 
   const checkAuth = async () => {
     const res = await fetch("/api/auth/me");
@@ -350,7 +498,7 @@ export default function AdminPage() {
                     {project.title}
                   </h3>
                   <p className="text-xs text-[#777] mb-3">Volgorde: {project.sortOrder}</p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => setModal({ open: true, mode: "edit", project })}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#96AB50] border border-[#96AB50] hover:bg-[#96AB50] hover:text-white transition-colors"
@@ -359,6 +507,22 @@ export default function AdminPage() {
                       <Pencil size={12} />
                       Bewerken
                     </button>
+                    <button
+                      onClick={() => setImageManagerId(project.id)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-400 hover:bg-blue-600 hover:text-white transition-colors"
+                      data-testid={`button-images-${project.id}`}
+                    >
+                      <Images size={12} />
+                      Foto's
+                    </button>
+                    <Link
+                      href={`/project/${project.id}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#555] border border-gray-300 hover:bg-gray-100 transition-colors"
+                      data-testid={`button-view-${project.id}`}
+                    >
+                      <Eye size={12} />
+                      Bekijken
+                    </Link>
                     <button
                       onClick={() => handleDelete(project.id)}
                       disabled={deleting === project.id}
@@ -381,6 +545,13 @@ export default function AdminPage() {
         onClose={() => setModal({ open: false, mode: "create" })}
         onSaved={fetchProjects}
       />
+
+      {imageManagerId !== null && (
+        <ImageManager
+          projectId={imageManagerId}
+          onClose={() => setImageManagerId(null)}
+        />
+      )}
     </div>
   );
 }

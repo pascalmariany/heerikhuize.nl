@@ -22,13 +22,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend
 - **Framework**: Express 5 (TypeScript, run via tsx)
-- **API**: Simple REST API, currently just a `/api/contact` endpoint for form submissions
-- **Storage**: In-memory storage (`MemStorage` class) with an `IStorage` interface designed to be swapped for database-backed storage later
+- **API**: REST API with contact form, project CRUD, project images, and auth endpoints
+- **Storage**: PostgreSQL-backed `DatabaseStorage` class implementing `IStorage` interface
+- **Auth**: Session-based authentication with bcrypt password hashing, connect-pg-simple session store
+- **File uploads**: multer for image uploads to `client/public/uploads/`
 - **HTTP Server**: Node.js `http.createServer` wrapping Express
 
 ### Database
 - **ORM**: Drizzle ORM configured for PostgreSQL
-- **Schema**: Defined in `shared/schema.ts` — currently has a `users` table with `id`, `username`, `password`
+- **Schema**: Defined in `shared/schema.ts`:
+  - `users` table: id (UUID), username, password
+  - `projects` table: id (serial), title, category, image, description, sortOrder, createdAt
+  - `project_images` table: id (serial), projectId, image, sortOrder
 - **Migrations**: Drizzle Kit with `db:push` command, migrations output to `./migrations`
 - **Connection**: Uses `DATABASE_URL` environment variable
 - **Validation**: drizzle-zod for generating Zod schemas from Drizzle table definitions
@@ -45,7 +50,7 @@ client/               # Frontend React app
     components/ui/    # shadcn/ui components
     hooks/            # Custom React hooks
     lib/              # Utilities (queryClient, cn helper)
-    pages/            # Page components (Home, not-found)
+    pages/            # Page components (Home, Projecten, Wonen, Werken, Interieur, ProjectDetail, Admin, AdminLogin, not-found)
 server/               # Backend Express server
   index.ts            # Entry point
   routes.ts           # API route definitions
