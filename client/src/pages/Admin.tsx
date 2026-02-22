@@ -442,9 +442,18 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-[#333] font-heading" data-testid="text-admin-title">
-            Projecten beheren
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold text-[#333] font-heading" data-testid="text-admin-title">
+              Projecten beheren
+            </h2>
+            <Link
+              href="/admin/nieuws"
+              className="inline-flex items-center gap-1 text-sm text-[#96AB50] hover:text-[#829745] transition-colors"
+              data-testid="link-admin-news"
+            >
+              Nieuws →
+            </Link>
+          </div>
           <button
             onClick={() => setModal({ open: true, mode: "create" })}
             className="inline-flex items-center gap-2 bg-[#96AB50] text-white px-5 py-2.5 text-sm font-semibold uppercase tracking-wider hover:bg-[#829745] transition-colors"

@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { label: "HOME", href: "#home", isRoute: false },
   { label: "PROJECTEN", href: "/projecten", isRoute: true },
   { label: "OVER", href: "#over", isRoute: false },
-  { label: "NIEUWS", href: "#nieuws", isRoute: false },
+  { label: "NIEUWS", href: "/nieuws", isRoute: true },
   { label: "CONTACT", href: "#contact", isRoute: false },
 ];
 

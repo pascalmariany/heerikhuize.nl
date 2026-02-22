@@ -232,5 +232,129 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  // --- News Categories ---
+  app.get("/api/news-categories", async (_req, res) => {
+    const categories = await storage.getAllNewsCategories();
+    res.json(categories);
+  });
+
+  app.post("/api/admin/news-categories", requireAuth, async (req, res) => {
+    const { name, slug, sortOrder } = req.body;
+    if (!name || !slug) {
+      return res.status(400).json({ error: "Naam en slug zijn verplicht" });
+    }
+    const category = await storage.createNewsCategory({
+      name: name.trim(),
+      slug: slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, ""),
+      sortOrder: parseInt(sortOrder) || 0,
+    });
+    res.json(category);
+  });
+
+  app.put("/api/admin/news-categories/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const { name, slug, sortOrder } = req.body;
+    const updateData: Record<string, any> = {};
+    if (name) updateData.name = name.trim();
+    if (slug) updateData.slug = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (sortOrder !== undefined) updateData.sortOrder = parseInt(sortOrder);
+    const category = await storage.updateNewsCategory(id, updateData);
+    if (!category) {
+      return res.status(404).json({ error: "Categorie niet gevonden" });
+    }
+    res.json(category);
+  });
+
+  app.delete("/api/admin/news-categories/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const success = await storage.deleteNewsCategory(id);
+    if (!success) {
+      return res.status(404).json({ error: "Categorie niet gevonden" });
+    }
+    res.json({ success: true });
+  });
+
+  // --- News Articles ---
+  app.get("/api/news", async (_req, res) => {
+    const articles = await storage.getPublishedNewsArticles();
+    const categories = await storage.getAllNewsCategories();
+    const articlesWithCategory = articles.map((a) => ({
+      ...a,
+      category: categories.find((c) => c.id === a.categoryId) || null,
+    }));
+    res.json(articlesWithCategory);
+  });
+
+  app.get("/api/news/:id", async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Ongeldig artikel ID" });
+    }
+    const article = await storage.getNewsArticle(id);
+    if (!article) {
+      return res.status(404).json({ error: "Artikel niet gevonden" });
+    }
+    const categories = await storage.getAllNewsCategories();
+    res.json({
+      ...article,
+      category: categories.find((c) => c.id === article.categoryId) || null,
+    });
+  });
+
+  app.get("/api/admin/news", requireAuth, async (_req, res) => {
+    const articles = await storage.getAllNewsArticles();
+    const categories = await storage.getAllNewsCategories();
+    const articlesWithCategory = articles.map((a) => ({
+      ...a,
+      category: categories.find((c) => c.id === a.categoryId) || null,
+    }));
+    res.json(articlesWithCategory);
+  });
+
+  app.post("/api/admin/news", requireAuth, upload.single("image"), async (req, res) => {
+    const { title, content, categoryId, published } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "Titel is verplicht" });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: "Afbeelding is verplicht" });
+    }
+    const article = await storage.createNewsArticle({
+      title: title.trim(),
+      content: content || "",
+      image: `/uploads/${req.file.filename}`,
+      categoryId: categoryId ? parseInt(categoryId) : null,
+      published: published !== undefined ? parseInt(published) : 1,
+    });
+    res.json(article);
+  });
+
+  app.put("/api/admin/news/:id", requireAuth, upload.single("image"), async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const { title, content, categoryId, published } = req.body;
+    const updateData: Record<string, any> = {};
+    if (title) updateData.title = title.trim();
+    if (content !== undefined) updateData.content = content;
+    if (categoryId !== undefined) updateData.categoryId = categoryId ? parseInt(categoryId) : null;
+    if (published !== undefined) updateData.published = parseInt(published);
+    if (req.file) {
+      updateData.image = `/uploads/${req.file.filename}`;
+    }
+    const article = await storage.updateNewsArticle(id, updateData);
+    if (!article) {
+      return res.status(404).json({ error: "Artikel niet gevonden" });
+    }
+    res.json(article);
+  });
+
+  app.delete("/api/admin/news/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id as string);
+    const success = await storage.deleteNewsArticle(id);
+    if (!success) {
+      return res.status(404).json({ error: "Artikel niet gevonden" });
+    }
+    res.json({ success: true });
+  });
+
   return httpServer;
 }

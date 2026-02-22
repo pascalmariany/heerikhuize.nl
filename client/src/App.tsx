@@ -10,7 +10,10 @@ import WerkenPage from "@/pages/Werken";
 import InterieurPage from "@/pages/Interieur";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminPage from "@/pages/Admin";
+import AdminNewsPage from "@/pages/AdminNews";
 import ProjectDetailPage from "@/pages/ProjectDetail";
+import NieuwsPage from "@/pages/Nieuws";
+import NieuwsDetailPage from "@/pages/NieuwsDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,8 +25,11 @@ function Router() {
       <Route path="/projecten/werken" component={WerkenPage} />
       <Route path="/projecten/interieur" component={InterieurPage} />
       <Route path="/project/:id" component={ProjectDetailPage} />
+      <Route path="/nieuws" component={NieuwsPage} />
+      <Route path="/nieuws/:id" component={NieuwsDetailPage} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/admin/nieuws" component={AdminNewsPage} />
       <Route component={NotFound} />
     </Switch>
   );
