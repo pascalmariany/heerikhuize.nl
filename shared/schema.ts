@@ -22,6 +22,7 @@ export const projects = pgTable("projects", {
   title: text("title").notNull(),
   category: text("category").notNull(),
   image: text("image").notNull(),
+  description: text("description").default(""),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -33,3 +34,17 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Project = typeof projects.$inferSelect;
+
+export const projectImages = pgTable("project_images", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  image: text("image").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertProjectImageSchema = createInsertSchema(projectImages).omit({
+  id: true,
+});
+
+export type InsertProjectImage = z.infer<typeof insertProjectImageSchema>;
+export type ProjectImage = typeof projectImages.$inferSelect;
