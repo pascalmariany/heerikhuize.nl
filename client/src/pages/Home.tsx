@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import logoPath from "@assets/logo.png";
 import marioPath from "@assets/favicon.jpg";
 import { Home as HomeIcon, Building2, Palette, MapPin, Phone, Mail, Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "HOME", href: "#home" },
-  { label: "PROJECTEN", href: "#diensten" },
-  { label: "OVER", href: "#over" },
-  { label: "NIEUWS", href: "#nieuws" },
-  { label: "CONTACT", href: "#contact" },
+  { label: "HOME", href: "#home", isRoute: false },
+  { label: "PROJECTEN", href: "/projecten", isRoute: true },
+  { label: "OVER", href: "#over", isRoute: false },
+  { label: "NIEUWS", href: "#nieuws", isRoute: false },
+  { label: "CONTACT", href: "#contact", isRoute: false },
 ];
 
 function Header() {
@@ -34,16 +35,27 @@ function Header() {
         </a>
 
         <nav className="hidden md:flex items-center gap-1" data-testid="nav-desktop">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="px-4 py-2 text-sm font-medium text-[#333] tracking-wide hover:text-[#96AB50] transition-colors font-heading"
-              data-testid={`link-nav-${item.label.toLowerCase()}`}
-            >
-              {item.label}
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.isRoute ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="px-4 py-2 text-sm font-medium text-[#333] tracking-wide hover:text-[#96AB50] transition-colors font-heading"
+                data-testid={`link-nav-${item.label.toLowerCase()}`}
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="px-4 py-2 text-sm font-medium text-[#333] tracking-wide hover:text-[#96AB50] transition-colors font-heading"
+                data-testid={`link-nav-${item.label.toLowerCase()}`}
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </nav>
 
         <button
@@ -57,17 +69,29 @@ function Header() {
 
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 shadow-lg" data-testid="nav-mobile">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="block px-6 py-3 text-sm font-medium text-[#333] hover:bg-[#F7FAEE] hover:text-[#96AB50] transition-colors"
-              onClick={() => setMobileOpen(false)}
-              data-testid={`link-mobile-${item.label.toLowerCase()}`}
-            >
-              {item.label}
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.isRoute ? (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="block px-6 py-3 text-sm font-medium text-[#333] hover:bg-[#F7FAEE] hover:text-[#96AB50] transition-colors"
+                onClick={() => setMobileOpen(false)}
+                data-testid={`link-mobile-${item.label.toLowerCase()}`}
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="block px-6 py-3 text-sm font-medium text-[#333] hover:bg-[#F7FAEE] hover:text-[#96AB50] transition-colors"
+                onClick={() => setMobileOpen(false)}
+                data-testid={`link-mobile-${item.label.toLowerCase()}`}
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </div>
       )}
     </header>
@@ -545,16 +569,27 @@ function Footer() {
             Van Heerikhuize Architectuur - Architecten & Bouwadviseurs
           </p>
           <div className="flex items-center gap-6 flex-wrap">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-xs text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
-                data-testid={`link-footer-${item.label.toLowerCase()}`}
-              >
-                {item.label}
-              </a>
-            ))}
+            {NAV_ITEMS.map((item) =>
+              item.isRoute ? (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-xs text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
+                  data-testid={`link-footer-${item.label.toLowerCase()}`}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-xs text-gray-400 hover:text-white transition-colors uppercase tracking-wider"
+                  data-testid={`link-footer-${item.label.toLowerCase()}`}
+                >
+                  {item.label}
+                </a>
+              )
+            )}
           </div>
         </div>
       </div>
