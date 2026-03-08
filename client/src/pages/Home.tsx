@@ -571,6 +571,7 @@ function Footer() {
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-privacy">Privacyverklaring</Link>
             <Link href="/algemene-voorwaarden" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-av">Algemene Voorwaarden</Link>
+            <Link href="/admin/login" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-hq">Heerikhuize HQ</Link>
           </div>
           <p className="text-sm text-gray-500">© 2025 Alle rechten voorbehouden</p>
         </div>
