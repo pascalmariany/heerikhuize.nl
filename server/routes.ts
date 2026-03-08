@@ -51,6 +51,8 @@ export async function registerRoutes(
 ): Promise<Server> {
   const PgSession = connectPg(session);
 
+  app.set("trust proxy", 1);
+
   app.use(
     session({
       store: new PgSession({
@@ -60,6 +62,7 @@ export async function registerRoutes(
       secret: process.env.SESSION_SECRET!,
       resave: false,
       saveUninitialized: false,
+      proxy: true,
       cookie: {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
@@ -94,7 +97,13 @@ export async function registerRoutes(
       return res.status(401).json({ error: "Ongeldige inloggegevens" });
     }
     req.session.userId = user.id;
-    res.json({ success: true });
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ error: "Sessie kon niet worden opgeslagen" });
+      }
+      res.json({ success: true });
+    });
   });
 
   app.post("/api/auth/logout", (req, res) => {
