@@ -80,7 +80,7 @@ function Footer() {
             <Link href="/algemene-voorwaarden" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-av">Algemene Voorwaarden</Link>
             <Link href="/admin/login" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-hq">Heerikhuize HQ</Link>
           </div>
-          <p className="text-sm text-gray-500">© 2025 Alle rechten voorbehouden</p>
+          <p className="text-sm text-gray-500">© {new Date().getFullYear()} Alle rechten voorbehouden</p>
         </div>
       </div>
     </footer>
