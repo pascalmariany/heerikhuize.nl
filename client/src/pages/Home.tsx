@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import logoPath from "@assets/logo.png";
+import logoPath from "@assets/logo_transparant_1773836623738.png";
 import marioPath from "@assets/favicon.jpg";
 import heroImg1 from "@assets/Verbindingsweg_1773836246967.jpg";
 import heroImg2 from "@assets/Voorfoto_1773836246967.JPG";
