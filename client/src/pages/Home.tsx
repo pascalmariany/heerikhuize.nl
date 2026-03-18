@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import logoPath from "@assets/logo.png";
@@ -7,7 +8,8 @@ import marioPath from "@assets/favicon.jpg";
 import heroImg1 from "@assets/Verbindingsweg_1773836246967.jpg";
 import heroImg2 from "@assets/Voorfoto_1773836246967.JPG";
 import heroImg3 from "@assets/WhatsApp_Image_2025-05-02_at_22.07.25_(3)_1773836246967.jpeg";
-import { Home as HomeIcon, Building2, Palette, MapPin, Phone, Mail, Menu, X } from "lucide-react";
+import { Home as HomeIcon, Building2, Palette, MapPin, Phone, Mail, Menu, X, Newspaper } from "lucide-react";
+import type { NewsArticle, NewsCategory } from "@shared/schema";
 
 const NAV_ITEMS = [
   { label: "HOME", href: "#home", isRoute: false },
@@ -345,7 +347,15 @@ function TabsSection() {
   );
 }
 
+type NewsArticleWithCategory = NewsArticle & { category: NewsCategory | null };
+
 function NieuwsSection() {
+  const { data: articles, isLoading } = useQuery<NewsArticleWithCategory[]>({
+    queryKey: ["/api/news"],
+  });
+
+  const latest = articles?.slice(0, 3) ?? [];
+
   return (
     <section id="nieuws" className="py-20 bg-white" data-testid="section-nieuws">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -356,52 +366,64 @@ function NieuwsSection() {
           Blijf op de hoogte van de laatste ontwikkelingen bij Van Heerikhuize Architectuur.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="group" data-testid="card-nieuws-1">
-            <div className="overflow-hidden mb-4">
-              <img
-                src="/images/project-slide.jpg"
-                alt="Project update"
-                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <p className="text-xs text-[#96AB50] font-semibold uppercase tracking-wider mb-2">Projecten</p>
-            <h4 className="font-bold text-[#333] font-heading mb-2">Nieuw project in Ede</h4>
-            <p className="text-sm text-[#555] leading-relaxed">
-              Een prachtige nieuwbouwwoning in moderne stijl, ontworpen met oog voor duurzaamheid en comfort.
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse" data-testid={`skeleton-nieuws-${i}`}>
+                <div className="bg-gray-200 h-52 mb-4" />
+                <div className="bg-gray-200 h-3 w-1/3 mb-2 rounded" />
+                <div className="bg-gray-200 h-5 w-3/4 mb-2 rounded" />
+                <div className="bg-gray-200 h-3 w-full rounded" />
+              </div>
+            ))}
+          </div>
+        ) : latest.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center" data-testid="nieuws-leeg">
+            <Newspaper size={48} className="text-gray-300 mb-4" />
+            <p className="text-[#777] text-[15px]">
+              Er zijn nog geen nieuwsberichten geplaatst.
             </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {latest.map((article) => (
+              <Link key={article.id} href={`/nieuws/${article.id}`} className="group block" data-testid={`card-nieuws-${article.id}`}>
+                <div className="overflow-hidden mb-4">
+                  <img
+                    src={article.image}
+                    alt={article.title}
+                    className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                {article.category && (
+                  <p className="text-xs text-[#96AB50] font-semibold uppercase tracking-wider mb-2">
+                    {article.category.name}
+                  </p>
+                )}
+                <h4 className="font-bold text-[#333] font-heading mb-2 group-hover:text-[#96AB50] transition-colors">
+                  {article.title}
+                </h4>
+                {article.content && (
+                  <p className="text-sm text-[#555] leading-relaxed line-clamp-3">
+                    {article.content.replace(/<[^>]*>/g, "")}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
 
-          <div className="group" data-testid="card-nieuws-2">
-            <div className="overflow-hidden mb-4">
-              <img
-                src="/images/werkzaamheden.jpg"
-                alt="Werkzaamheden"
-                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <p className="text-xs text-[#96AB50] font-semibold uppercase tracking-wider mb-2">Bureau</p>
-            <h4 className="font-bold text-[#333] font-heading mb-2">Samenwerking met BIM</h4>
-            <p className="text-sm text-[#555] leading-relaxed">
-              Wij werken met Bouw Informatie Modellen voor optimale afstemming binnen grotere projecten.
-            </p>
+        {!isLoading && latest.length > 0 && (
+          <div className="text-center mt-12">
+            <Link
+              href="/nieuws"
+              className="inline-block border border-[#96AB50] text-[#96AB50] px-8 py-3 text-sm font-semibold uppercase tracking-wider hover:bg-[#96AB50] hover:text-white transition-colors"
+              data-testid="link-meer-nieuws"
+            >
+              Alle nieuwsberichten
+            </Link>
           </div>
-
-          <div className="group" data-testid="card-nieuws-3">
-            <div className="overflow-hidden mb-4">
-              <img
-                src="/images/duurzaamheid.jpg"
-                alt="Duurzaamheid"
-                className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <p className="text-xs text-[#96AB50] font-semibold uppercase tracking-wider mb-2">Duurzaamheid</p>
-            <h4 className="font-bold text-[#333] font-heading mb-2">Partner van MVO Nederland</h4>
-            <p className="text-sm text-[#555] leading-relaxed">
-              Wij werken aan een klimaatneutrale, circulaire en inclusieve economie met transparante ketens.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
     </section>
   );
