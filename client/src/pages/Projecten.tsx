@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import logoPath from "@assets/logo.png";
+import wonenImg from "@assets/2021-001_3_1773837065330.jpg";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -95,7 +96,7 @@ const CATEGORIES = [
   {
     title: "Wonen",
     href: "/projecten/wonen",
-    image: "/images/wonen/project-1.jpg",
+    image: wonenImg,
   },
   {
     title: "Werken",
