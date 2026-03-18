@@ -345,62 +345,6 @@ function TabsSection() {
   );
 }
 
-function TestimonialsSection() {
-  const testimonials = [
-    {
-      text: "Proin sed libero enim sed faucibus turpis. At imperdiet dui accumsan sit amet nulla facilisi morbi tempus. Ut sem nulla pharetra diam sit amet nisl.",
-      name: "Celia Almeda",
-      role: "CEO Bedrijf",
-    },
-    {
-      text: "Proin sed libero enim sed faucibus turpis. At imperdiet dui accumsan sit amet nulla facilisi morbi tempus. Ut sem nulla pharetra diam sit amet nisl.",
-      name: "Frank Kinney",
-      role: "Financieel directeur",
-    },
-  ];
-
-  return (
-    <section className="py-20 bg-[#F7FAEE]" data-testid="section-testimonials">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-[#333] text-center mb-4 font-heading">
-          Lees wat onze klanten zeggen
-        </h2>
-        <p className="text-center text-[#777] mb-12 max-w-2xl mx-auto text-[15px]">
-          Proin sed libero enim sed faucibus turpis. At imperdiet dui accumsan sit amet nulla facilisi morbi tempus. Ut sem nulla pharetra diam sit amet nisl.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {testimonials.map((t) => (
-            <div
-              key={t.name}
-              className="bg-white p-8 shadow-md"
-              data-testid={`card-testimonial-${t.name.toLowerCase().replace(/\s/g, "-")}`}
-            >
-              <p className="text-[#555] text-[15px] leading-relaxed italic mb-6">
-                "{t.text}"
-              </p>
-              <div>
-                <h5 className="font-bold text-[#333] text-sm font-heading">{t.name}</h5>
-                <p className="text-xs text-[#96AB50] font-medium">{t.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <a
-            href="#"
-            className="inline-block bg-[#96AB50] text-white px-8 py-3 text-sm font-semibold uppercase tracking-wider hover:bg-[#829745] transition-colors"
-            data-testid="button-bekijk-meer"
-          >
-            Bekijk meer
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function NieuwsSection() {
   return (
     <section id="nieuws" className="py-20 bg-white" data-testid="section-nieuws">
@@ -641,7 +585,6 @@ export default function HomePage() {
       <HeroSection />
       <AboutSection />
       <TabsSection />
-      <TestimonialsSection />
       <NieuwsSection />
       <ContactSection />
       <Footer />
