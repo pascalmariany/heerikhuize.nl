@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import logoPath from "@assets/logo.png";
+import logoPath from "@assets/logo_transparant_1773836623738.png";
 import wonenImg from "@assets/2021-001_3_1773837065330.jpg";
 import werkenImg from "@assets/IMG_2141_1773837079977.jpg";
 import interieurImg from "@assets/IMG_1585_1773837096183.jpg";
@@ -86,6 +86,7 @@ function Footer() {
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-privacy">Privacyverklaring</Link>
             <Link href="/algemene-voorwaarden" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-av">Algemene Voorwaarden</Link>
+            <Link href="/admin/login" className="text-sm text-gray-400 hover:text-[#96AB50] transition-colors" data-testid="link-footer-hq">Heerikhuize HQ</Link>
           </div>
           <p className="text-sm text-gray-500">© 2025 Alle rechten voorbehouden</p>
         </div>
