@@ -80,6 +80,13 @@ export async function registerRoutes(
     if (!email || !naam || !bericht) {
       return res.status(400).json({ error: "Alle velden zijn verplicht" });
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Voer een geldig e-mailadres in" });
+    }
+    if (bericht.length > 5000) {
+      return res.status(400).json({ error: "Bericht is te lang (maximaal 5000 tekens)" });
+    }
     try {
       const { client, fromEmail } = await getUncachableResendClient();
       await client.emails.send({
