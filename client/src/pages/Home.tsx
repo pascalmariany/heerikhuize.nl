@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import logoPath from "@assets/logo.png";
 import marioPath from "@assets/favicon.jpg";
+import heroImg1 from "@assets/Verbindingsweg_1773836246967.jpg";
+import heroImg2 from "@assets/Voorfoto_1773836246967.JPG";
+import heroImg3 from "@assets/WhatsApp_Image_2025-05-02_at_22.07.25_(3)_1773836246967.jpeg";
 import { Home as HomeIcon, Building2, Palette, MapPin, Phone, Mail, Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -98,16 +103,65 @@ function Header() {
   );
 }
 
+const HERO_IMAGES = [
+  { src: heroImg1, alt: "Verbindingsweg – woonproject" },
+  { src: heroImg2, alt: "Bedrijfspand – werkproject" },
+  { src: heroImg3, alt: "Aanbouw – interieurproject" },
+];
+
 function HeroSection() {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
+    Autoplay({ delay: 5000, stopOnInteraction: false }),
+  ]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on("select", onSelect);
+    onSelect();
+  }, [emblaApi, onSelect]);
+
+  const scrollTo = useCallback(
+    (index: number) => emblaApi && emblaApi.scrollTo(index),
+    [emblaApi]
+  );
+
   return (
     <section id="home" className="relative w-full" data-testid="section-hero">
-      <div className="relative w-full h-[85vh] min-h-[600px]">
-        <img
-          src="/images/hero-bg.jpg"
-          alt="Architectuur project"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
+      <div className="relative w-full h-[85vh] min-h-[600px] overflow-hidden">
+        <div className="overflow-hidden h-full" ref={emblaRef}>
+          <div className="flex h-full">
+            {HERO_IMAGES.map((img, i) => (
+              <div key={i} className="relative flex-[0_0_100%] h-full">
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20" data-testid="carousel-dots">
+          {HERO_IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => scrollTo(i)}
+              data-testid={`carousel-dot-${i}`}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                i === selectedIndex ? "bg-white scale-125" : "bg-white/50 hover:bg-white/80"
+              }`}
+              aria-label={`Ga naar afbeelding ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="relative -mt-40 z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
