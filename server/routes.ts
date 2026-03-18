@@ -8,6 +8,7 @@ import connectPg from "connect-pg-simple";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { getUncachableResendClient } from "./resend";
 
 declare module "express-session" {
   interface SessionData {
@@ -74,13 +75,25 @@ export async function registerRoutes(
 
   await seed();
 
-  app.post("/api/contact", (req, res) => {
+  app.post("/api/contact", async (req, res) => {
     const { email, naam, bericht } = req.body;
     if (!email || !naam || !bericht) {
       return res.status(400).json({ error: "Alle velden zijn verplicht" });
     }
-    console.log("Contact form submission:", { email, naam, bericht });
-    res.json({ success: true, message: "Bericht ontvangen" });
+    try {
+      const { client, fromEmail } = await getUncachableResendClient();
+      await client.emails.send({
+        from: fromEmail,
+        to: "info@heerikhuize.nl",
+        subject: `Nieuw contactbericht van ${naam}`,
+        text: `Naam: ${naam}\nE-mail: ${email}\n\n${bericht}`,
+        replyTo: email,
+      });
+      res.json({ success: true, message: "Bericht ontvangen" });
+    } catch (err) {
+      console.error("Resend fout:", err);
+      res.status(500).json({ error: "Bericht kon niet worden verstuurd. Probeer het later opnieuw." });
+    }
   });
 
   app.post("/api/auth/login", async (req, res) => {
