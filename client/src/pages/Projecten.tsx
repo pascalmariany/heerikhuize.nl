@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import logoPath from "@assets/logo.png";
 import wonenImg from "@assets/2021-001_3_1773837065330.jpg";
 import werkenImg from "@assets/IMG_2141_1773837079977.jpg";
+import interieurImg from "@assets/IMG_1585_1773837096183.jpg";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -107,7 +108,7 @@ const CATEGORIES = [
   {
     title: "Interieur",
     href: "/projecten/interieur",
-    image: "/images/interieur/project-1.jpg",
+    image: interieurImg,
   },
 ];
 
