@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, timestamp, customType } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,6 +48,26 @@ export const insertProjectImageSchema = createInsertSchema(projectImages).omit({
 
 export type InsertProjectImage = z.infer<typeof insertProjectImageSchema>;
 export type ProjectImage = typeof projectImages.$inferSelect;
+
+// Binaire opslag voor geüploade afbeeldingen — bewaard in PostgreSQL zodat
+// uploads ook in productie (Autoscale, tijdelijk bestandssysteem) blijven bestaan.
+const bytea = customType<{ data: Buffer; notNull: false; default: false }>({
+  dataType() {
+    return "bytea";
+  },
+});
+
+export const uploadedImages = pgTable("uploaded_images", {
+  id: serial("id").primaryKey(),
+  filename: varchar("filename", { length: 191 }).notNull().unique(),
+  mimeType: text("mime_type").notNull(),
+  data: bytea("data").notNull(),
+  size: integer("size").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type UploadedImage = typeof uploadedImages.$inferSelect;
+export type InsertUploadedImage = typeof uploadedImages.$inferInsert;
 
 export const newsCategories = pgTable("news_categories", {
   id: serial("id").primaryKey(),

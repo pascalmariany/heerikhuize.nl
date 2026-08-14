@@ -250,6 +250,7 @@ function ImageManager({
   const [images, setImages] = useState<ProjectImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [deleting, setDeleting] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -269,16 +270,33 @@ function ImageManager({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploading(true);
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("images", files[i]);
-    }
-    const res = await fetch(`/api/admin/projects/${projectId}/images`, {
-      method: "POST",
-      body: formData,
-    });
-    if (res.ok) {
+    setUploadError("");
+    // In kleine batches uploaden zodat grote selecties de server niet overbelasten
+    const CHUNK_SIZE = 4;
+    const fileList = Array.from(files);
+    try {
+      for (let start = 0; start < fileList.length; start += CHUNK_SIZE) {
+        const formData = new FormData();
+        for (const file of fileList.slice(start, start + CHUNK_SIZE)) {
+          formData.append("images", file);
+        }
+        const res = await fetch(`/api/admin/projects/${projectId}/images`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          let msg = "Uploaden mislukt. Probeer het opnieuw.";
+          try {
+            const data = await res.json();
+            if (data.error) msg = data.error;
+          } catch {}
+          setUploadError(msg);
+          break;
+        }
+      }
       await fetchImages();
+    } catch {
+      setUploadError("Uploaden mislukt. Controleer de internetverbinding en probeer het opnieuw.");
     }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -326,6 +344,9 @@ function ImageManager({
               <Upload size={16} />
               {uploading ? "Uploaden..." : "Foto's toevoegen"}
             </button>
+            {uploadError && (
+              <p className="text-red-500 text-sm mt-2" data-testid="text-upload-error">{uploadError}</p>
+            )}
           </div>
 
           {loading ? (

@@ -7,7 +7,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import multer from "multer";
 import path from "path";
-import fs from "fs";
+import sharp from "sharp";
 import { getUncachableResendClient } from "./resend";
 
 declare module "express-session" {
@@ -16,28 +16,117 @@ declare module "express-session" {
   }
 }
 
-const uploadsDir = path.join(process.cwd(), "client", "public", "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const multerStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).substring(7)}${ext}`);
-  },
-});
-
+// Uploads gaan naar PostgreSQL (tabel uploaded_images) in plaats van naar schijf.
+// In productie (Autoscale) is het bestandssysteem tijdelijk én wordt alleen de
+// build-map geserveerd — bestanden op schijf verdwijnen daar of zijn onbereikbaar.
+// Let op: memoryStorage buffert bestanden in RAM. Houd fileSize × files klein
+// genoeg voor een Autoscale-instance; de client uploadt in kleine batches.
 const upload = multer({
-  storage: multerStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 4 },
   fileFilter: (_req, file, cb) => {
     const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, allowed.includes(ext));
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      const err = new Error("Bestandstype niet ondersteund") as Error & { code?: string };
+      err.code = "UNSUPPORTED_FILE_TYPE";
+      cb(err);
+    }
   },
 });
+
+const INVALID_IMAGE_MSG =
+  "Afbeelding kon niet worden verwerkt. Gebruik een JPG-, PNG- of WebP-bestand.";
+
+function multerErrorMessage(err: unknown): string {
+  const code = (err as { code?: string } | null)?.code;
+  if (code === "LIMIT_FILE_SIZE") {
+    return "Afbeelding is te groot (maximaal 15 MB per foto).";
+  }
+  if (code === "UNSUPPORTED_FILE_TYPE") {
+    return "Bestandstype niet ondersteund. Gebruik JPG, PNG, WebP of GIF.";
+  }
+  if (code === "LIMIT_UNEXPECTED_FILE" || code === "LIMIT_FILE_COUNT") {
+    return "Te veel bestanden in één verzoek (maximaal 4 tegelijk).";
+  }
+  return "Uploaden mislukt. Probeer het opnieuw.";
+}
+
+function uploadSingle(field: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    upload.single(field)(req, res, (err: unknown) => {
+      if (err) {
+        return res.status(400).json({ error: multerErrorMessage(err) });
+      }
+      next();
+    });
+  };
+}
+
+function uploadArray(field: string, maxCount: number) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    upload.array(field, maxCount)(req, res, (err: unknown) => {
+      if (err) {
+        return res.status(400).json({ error: multerErrorMessage(err) });
+      }
+      next();
+    });
+  };
+}
+
+const MAX_IMAGE_DIMENSION = 2000;
+
+// Comprimeert de afbeelding (max 2000px, EXIF-rotatie genormaliseerd) en slaat
+// haar op in de database. Geeft het publieke pad (/uploads/...) terug.
+async function processAndStoreImage(file: Express.Multer.File): Promise<string> {
+  const ext = path.extname(file.originalname).toLowerCase();
+  let data: Buffer;
+  let mimeType: string;
+  let finalExt: string;
+
+  if (ext === ".gif") {
+    // GIF ongewijzigd bewaren zodat animaties intact blijven,
+    // maar wel valideren dat het echt een GIF is.
+    const meta = await sharp(file.buffer).metadata();
+    if (meta.format !== "gif") {
+      throw new Error("Bestand is geen geldige GIF");
+    }
+    data = file.buffer;
+    mimeType = "image/gif";
+    finalExt = ".gif";
+  } else {
+    const pipeline = sharp(file.buffer).rotate().resize({
+      width: MAX_IMAGE_DIMENSION,
+      height: MAX_IMAGE_DIMENSION,
+      fit: "inside",
+      withoutEnlargement: true,
+    });
+    if (ext === ".png") {
+      data = await pipeline.png({ compressionLevel: 9 }).toBuffer();
+      mimeType = "image/png";
+      finalExt = ".png";
+    } else if (ext === ".webp") {
+      data = await pipeline.webp({ quality: 82 }).toBuffer();
+      mimeType = "image/webp";
+      finalExt = ".webp";
+    } else {
+      data = await pipeline.jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+      mimeType = "image/jpeg";
+      finalExt = ".jpg";
+    }
+  }
+
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${finalExt}`;
+  await storage.saveUploadedImage({
+    filename,
+    mimeType,
+    data,
+    size: data.length,
+  });
+  return `/uploads/${filename}`;
+}
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
@@ -167,9 +256,27 @@ export async function registerRoutes(
     res.json(categoryProjects);
   });
 
+  // Geüploade afbeeldingen uit de database serveren (werkt in dev én productie).
+  // Oudere bestanden die nog op schijf staan vallen door naar de static handler.
+  app.get("/uploads/:filename", async (req, res, next) => {
+    const filename = req.params.filename as string;
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename)) {
+      return next();
+    }
+    const img = await storage.getUploadedImage(filename);
+    if (!img) {
+      return next();
+    }
+    res.setHeader("Content-Type", img.mimeType);
+    res.setHeader("Content-Length", String(img.size));
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(img.data);
+  });
+
   const validCategories = ["wonen", "werken", "interieur"];
 
-  app.post("/api/admin/projects", requireAuth, upload.single("image"), async (req, res) => {
+  app.post("/api/admin/projects", requireAuth, uploadSingle("image"), async (req, res) => {
     const { title, category, sortOrder, description } = req.body;
     if (!title || !category) {
       return res.status(400).json({ error: "Titel en categorie zijn verplicht" });
@@ -180,17 +287,24 @@ export async function registerRoutes(
     if (!req.file) {
       return res.status(400).json({ error: "Afbeelding is verplicht" });
     }
+    let imagePath: string;
+    try {
+      imagePath = await processAndStoreImage(req.file);
+    } catch (err) {
+      console.error("Afbeelding verwerken mislukt:", err);
+      return res.status(400).json({ error: INVALID_IMAGE_MSG });
+    }
     const project = await storage.createProject({
       title: title.trim(),
       category,
-      image: `/uploads/${req.file.filename}`,
+      image: imagePath,
       description: description || "",
       sortOrder: parseInt(sortOrder) || 0,
     });
     res.json(project);
   });
 
-  app.put("/api/admin/projects/:id", requireAuth, upload.single("image"), async (req, res) => {
+  app.put("/api/admin/projects/:id", requireAuth, uploadSingle("image"), async (req, res) => {
     const id = parseInt(req.params.id as string);
     const { title, category, sortOrder, description } = req.body;
     const updateData: Record<string, any> = {};
@@ -204,7 +318,12 @@ export async function registerRoutes(
     if (sortOrder !== undefined) updateData.sortOrder = parseInt(sortOrder);
     if (description !== undefined) updateData.description = description;
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      try {
+        updateData.image = await processAndStoreImage(req.file);
+      } catch (err) {
+        console.error("Afbeelding verwerken mislukt:", err);
+        return res.status(400).json({ error: INVALID_IMAGE_MSG });
+      }
     }
     const project = await storage.updateProject(id, updateData);
     if (!project) {
@@ -228,7 +347,7 @@ export async function registerRoutes(
     res.json(images);
   });
 
-  app.post("/api/admin/projects/:id/images", requireAuth, upload.array("images", 20), async (req, res) => {
+  app.post("/api/admin/projects/:id/images", requireAuth, uploadArray("images", 4), async (req, res) => {
     const projectId = parseInt(req.params.id as string);
     const project = await storage.getProject(projectId);
     if (!project) {
@@ -240,11 +359,20 @@ export async function registerRoutes(
     }
     const existing = await storage.getProjectImages(projectId);
     const startOrder = existing.length;
+    const storedPaths: string[] = [];
+    try {
+      for (const f of files) {
+        storedPaths.push(await processAndStoreImage(f));
+      }
+    } catch (err) {
+      console.error("Afbeelding verwerken mislukt:", err);
+      return res.status(400).json({ error: INVALID_IMAGE_MSG });
+    }
     const created = [];
-    for (let i = 0; i < files.length; i++) {
+    for (let i = 0; i < storedPaths.length; i++) {
       const img = await storage.addProjectImage({
         projectId,
-        image: `/uploads/${files[i].filename}`,
+        image: storedPaths[i],
         sortOrder: startOrder + i,
       });
       created.push(img);
@@ -340,7 +468,7 @@ export async function registerRoutes(
     res.json(articlesWithCategory);
   });
 
-  app.post("/api/admin/news", requireAuth, upload.single("image"), async (req, res) => {
+  app.post("/api/admin/news", requireAuth, uploadSingle("image"), async (req, res) => {
     const { title, content, categoryId, published } = req.body;
     if (!title) {
       return res.status(400).json({ error: "Titel is verplicht" });
@@ -348,17 +476,24 @@ export async function registerRoutes(
     if (!req.file) {
       return res.status(400).json({ error: "Afbeelding is verplicht" });
     }
+    let imagePath: string;
+    try {
+      imagePath = await processAndStoreImage(req.file);
+    } catch (err) {
+      console.error("Afbeelding verwerken mislukt:", err);
+      return res.status(400).json({ error: INVALID_IMAGE_MSG });
+    }
     const article = await storage.createNewsArticle({
       title: title.trim(),
       content: content || "",
-      image: `/uploads/${req.file.filename}`,
+      image: imagePath,
       categoryId: categoryId ? parseInt(categoryId) : null,
       published: published !== undefined ? parseInt(published) : 1,
     });
     res.json(article);
   });
 
-  app.put("/api/admin/news/:id", requireAuth, upload.single("image"), async (req, res) => {
+  app.put("/api/admin/news/:id", requireAuth, uploadSingle("image"), async (req, res) => {
     const id = parseInt(req.params.id as string);
     const { title, content, categoryId, published } = req.body;
     const updateData: Record<string, any> = {};
@@ -367,7 +502,12 @@ export async function registerRoutes(
     if (categoryId !== undefined) updateData.categoryId = categoryId ? parseInt(categoryId) : null;
     if (published !== undefined) updateData.published = parseInt(published);
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
+      try {
+        updateData.image = await processAndStoreImage(req.file);
+      } catch (err) {
+        console.error("Afbeelding verwerken mislukt:", err);
+        return res.status(400).json({ error: INVALID_IMAGE_MSG });
+      }
     }
     const article = await storage.updateNewsArticle(id, updateData);
     if (!article) {

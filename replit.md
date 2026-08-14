@@ -25,7 +25,7 @@ Preferred communication style: Simple, everyday language.
 - **API**: REST API with contact form, project CRUD, project images, and auth endpoints
 - **Storage**: PostgreSQL-backed `DatabaseStorage` class implementing `IStorage` interface
 - **Auth**: Session-based authentication with bcrypt password hashing, connect-pg-simple session store
-- **File uploads**: multer for image uploads to `client/public/uploads/`
+- **File uploads**: multer (memory storage) → sharp compresses to max 2000px → stored as bytea in PostgreSQL (`uploaded_images` table) → served via `GET /uploads/:filename` with immutable cache headers. NEVER store uploads on disk: production runs on Autoscale (ephemeral filesystem) and only serves `dist/public` from build time. Max upload 25 MB; allowed: jpg/jpeg/png/webp/gif (gif stored unprocessed to preserve animation).
 - **HTTP Server**: Node.js `http.createServer` wrapping Express
 
 ### Database
@@ -34,6 +34,7 @@ Preferred communication style: Simple, everyday language.
   - `users` table: id (UUID), username, password
   - `projects` table: id (serial), title, category, image, description, sortOrder, createdAt
   - `project_images` table: id (serial), projectId, image, sortOrder
+  - `uploaded_images` table: id (serial), filename (unique), mimeType, data (bytea), size, createdAt — binary storage for admin-uploaded images
 - **Migrations**: Drizzle Kit with `db:push` command, migrations output to `./migrations`
 - **Connection**: Uses `DATABASE_URL` environment variable
 - **Validation**: drizzle-zod for generating Zod schemas from Drizzle table definitions

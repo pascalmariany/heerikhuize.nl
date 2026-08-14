@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Project, type InsertProject, type ProjectImage, type InsertProjectImage, type NewsCategory, type InsertNewsCategory, type NewsArticle, type InsertNewsArticle, users, projects, projectImages, newsCategories, newsArticles } from "@shared/schema";
+import { type User, type InsertUser, type Project, type InsertProject, type ProjectImage, type InsertProjectImage, type NewsCategory, type InsertNewsCategory, type NewsArticle, type InsertNewsArticle, type UploadedImage, type InsertUploadedImage, users, projects, projectImages, newsCategories, newsArticles, uploadedImages } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, desc } from "drizzle-orm";
 
@@ -15,6 +15,8 @@ export interface IStorage {
   getProjectImages(projectId: number): Promise<ProjectImage[]>;
   addProjectImage(image: InsertProjectImage): Promise<ProjectImage>;
   deleteProjectImage(id: number): Promise<boolean>;
+  saveUploadedImage(image: InsertUploadedImage): Promise<void>;
+  getUploadedImage(filename: string): Promise<UploadedImage | undefined>;
   getAllNewsCategories(): Promise<NewsCategory[]>;
   getNewsCategory(id: number): Promise<NewsCategory | undefined>;
   createNewsCategory(category: InsertNewsCategory): Promise<NewsCategory>;
@@ -85,6 +87,15 @@ export class DatabaseStorage implements IStorage {
   async deleteProjectImage(id: number): Promise<boolean> {
     const result = await db.delete(projectImages).where(eq(projectImages.id, id)).returning();
     return result.length > 0;
+  }
+
+  async saveUploadedImage(image: InsertUploadedImage): Promise<void> {
+    await db.insert(uploadedImages).values(image);
+  }
+
+  async getUploadedImage(filename: string): Promise<UploadedImage | undefined> {
+    const [img] = await db.select().from(uploadedImages).where(eq(uploadedImages.filename, filename));
+    return img;
   }
 
   async getAllNewsCategories(): Promise<NewsCategory[]> {
